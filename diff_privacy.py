@@ -20,7 +20,8 @@ def diff_privacy(File, Ep):
     Outputs: 
         - The original histogram and error plot.
     """
-    print(Ep)
+    print("User picked epsilon is: ", Ep)
+    #print(type(Ep))
     df = pd.read_csv(File)
     MinAge = df.Age.min()
     MaxAge = df.Age.max()
@@ -35,8 +36,13 @@ def diff_privacy(File, Ep):
     laplaceMechanism_v = np.vectorize(laplaceMechanism)
     err_list  = []
     new_count = []
-    EP = np.linspace(0.1,1,10)
+    user_counts = laplaceMechanism_v(counts,1/float(Ep)) # Noisy histogram counts calculated with user's epsilon
+    #print(len(user_counts))
+    user_error  = np.mean(np.abs(counts - user_counts)) # mean absolute error calculated for user's epsilon
+    print("Differential privacy error for the user's epsilon is:", user_error)
     
+    EP = np.linspace(0.1,1,10)
+    #print(len(Bins))
     for ep in EP:
         countsPrime = laplaceMechanism_v(counts,1/ep)
         new_count.append(countsPrime)
@@ -44,8 +50,7 @@ def diff_privacy(File, Ep):
         err_list.append(np.mean(np.abs(error)))
         
         
-    fig, ax = plt.subplots(1, 2, figsize=(20, 18))
-    colors = ['red', 'blue']
+    fig, ax = plt.subplots(1, 3, figsize=(20, 18))
     axes = ax.flatten()
     axes[0].hist(df.Age, bins=Bins)
     axes[0].set_title('Age histogram',fontsize='large')
@@ -53,15 +58,21 @@ def diff_privacy(File, Ep):
     axes[0].set_xlabel('Age', color='blue')
     axes[0].grid(True)
     axes[0].legend(loc='upper right')
-        
-    axes[1].set_title('Error plot',fontsize='large')
-    axes[1].plot(EP,err_list)
-    axes[1].set_ylabel('Absolute error')
-    axes[1].set_xlabel('epsilon')
-    axes[1].set_xticks(EP)
+    
+    axes[1].set_title('Histogram count after adding noise',fontsize='large')
+    axes[1].bar(Bins[1::],user_counts, 10, color="red")
+    axes[1].set_ylabel('Number of people', color='blue')
+    axes[1].set_xlabel('Age', color='blue')
     axes[1].grid(True)
+    
+    axes[2].set_title('Error plot',fontsize='large')
+    axes[2].plot(EP,err_list)
+    axes[2].set_ylabel('Absolute error')
+    axes[2].set_xlabel('epsilon')
+    axes[2].set_xticks(EP)
+    axes[2].grid(True)
     plt.show()
-
+    
 if __name__== "__main__":
     if len(sys.argv) == 3:
         diff_privacy(sys.argv[1],sys.argv[2])
